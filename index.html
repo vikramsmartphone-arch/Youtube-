@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>YouTube Video Player with Watch Later</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #111;
+      color: #eee;
+      text-align: center;
+      margin: 0;
+      padding: 20px;
+      padding-top: 60px; /* 👈 Pushes content down below SPCK sticky preview bar */
+      box-sizing: border-box;
+    }
+    #player-container {
+      max-width: 800px;
+      margin: auto;
+      background: #000;
+      border-radius: 12px;
+      overflow: hidden;
+      position: relative;
+    }
+    #player {
+      width: 100%;
+      height: 450px;
+    }
+    .controls {
+      margin: 15px 0;
+      position: sticky;
+      top: 0;
+      background: #111;
+      padding: 10px 0;
+      z-index: 100;
+    }
+    input {
+      padding: 8px;
+      width: 60%;
+      border-radius: 8px;
+      border: none;
+    }
+    button {
+      padding: 8px 12px;
+      margin: 4px;
+      border: none;
+      border-radius: 8px;
+      background: #ff4444;
+      color: white;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    button:hover {
+      background: #ff2222;
+    }
+    h2 {
+      margin-top: 30px;
+    }
+    #watchLaterList {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      justify-content: center;
+    }
+    .video-card {
+      background: #1c1c1c;
+      border-radius: 12px;
+      width: 200px;
+      overflow: hidden;
+      text-align: left;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.5);
+    }
+    .video-card img {
+      width: 100%;
+      display: block;
+    }
+    .video-card .info {
+      padding: 8px;
+    }
+    .video-card .info p {
+      font-size: 14px;
+      margin: 0 0 8px 0;
+      color: #ddd;
+    }
+    .video-card button {
+      margin-right: 4px;
+      font-size: 12px;
+      padding: 5px 8px;
+    }
+  </style>
+</head>
+<body>
+  <h1>🎬 YouTube Video Player (API)</h1>
+  <div class="controls">
+    <input type="text" id="videoUrl" placeholder="Enter YouTube link...">
+    <button onclick="loadVideo()">Load</button>
+    <button onclick="saveVideo()">Save</button>
+    <button onclick="toggleFullscreen()">Fullscreen</button>
+    <button onclick="setSpeed(2)">2x Speed</button>
+  </div>
+
+  <div id="player-container">
+    <div id="player"></div>
+  </div>
+
+  <h2>📺 Watch Later</h2>
+  <div id="watchLaterList"></div>
+
+  <!-- Load YouTube IFrame Player API -->
+  <script src="https://www.youtube.com/iframe_api"></script>
+  <script>
+    let player;
+
+    function onYouTubeIframeAPIReady() {
+      player = new YT.Player('player', {
+        height: '450',
+        width: '800',
+        videoId: '',
+        playerVars: { rel: 0, modestbranding: 1 },
+      });
+    }
+
+    function extractVideoId(url) {
+      const regex = /(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
+      const match = url.match(regex);
+      return match ? match[1] : url;
+    }
+
+    function loadVideo(videoId) {
+      if (!videoId) videoId = extractVideoId(document.getElementById('videoUrl').value);
+      player.loadVideoById(videoId);
+    }
+
+    function toggleFullscreen() {
+      const iframe = player.getIframe();
+      if (document.fullscreenElement) {
+        document.exitFullscreen();
+      } else {
+        iframe.requestFullscreen();
+      }
+    }
+
+    function setSpeed(speed) {
+      if (player) player.setPlaybackRate(speed);
+    }
+
+    function saveVideo() {
+      const url = document.getElementById('videoUrl').value;
+      const videoId = extractVideoId(url);
+      if (!videoId) return alert("Invalid link!");
+      fetch(`https://noembed.com/embed?url=https://www.youtube.com/watch?v=${videoId}`)
+        .then(res => res.json())
+        .then(data => {
+          const title = data.title || "Untitled Video";
+          let saved = JSON.parse(localStorage.getItem("watchLater")) || [];
+          if (!saved.some(v => v.id === videoId)) {
+            saved.push({ id: videoId, title: title });
+            localStorage.setItem("watchLater", JSON.stringify(saved));
+            renderWatchLater();
+          }
+        });
+    }
+
+    function renderWatchLater() {
+      let saved = JSON.parse(localStorage.getItem("watchLater")) || [];
+      const container = document.getElementById("watchLaterList");
+      container.innerHTML = "";
+      saved.forEach(video => {
+        const card = document.createElement("div");
+        card.className = "video-card";
+        card.innerHTML = `
+          <img src="https://img.youtube.com/vi/${video.id}/hqdefault.jpg">
+          <div class="info">
+            <p>${video.title}</p>
+            <button onclick="loadVideo('${video.id}')">Play</button>
+            <button onclick="deleteVideo('${video.id}')">Delete</button>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    function deleteVideo(videoId) {
+      let saved = JSON.parse(localStorage.getItem("watchLater")) || [];
+      saved = saved.filter(v => v.id !== videoId);
+      localStorage.setItem("watchLater", JSON.stringify(saved));
+      renderWatchLater();
+    }
+
+    renderWatchLater();
+  </script>
+  
+
+</body>
+</html>
