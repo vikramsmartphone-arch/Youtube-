@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>YouTube Video Player with Watch Later</title>
+  <title>YouTube Video Player with Watch Later (5PM–10PM Mode)</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -11,7 +11,7 @@
       text-align: center;
       margin: 0;
       padding: 20px;
-      padding-top: 60px; /* 👈 Pushes content down below SPCK sticky preview bar */
+      padding-top: 60px;
       box-sizing: border-box;
     }
     #player-container {
@@ -87,16 +87,21 @@
       font-size: 12px;
       padding: 5px 8px;
     }
+    #lockMessage {
+      font-size: 18px;
+      color: #ff6666;
+      margin-top: 20px;
+    }
   </style>
 </head>
 <body>
-  <h1>🎬 YouTube Video Player (API)</h1>
+  <h1>🎬 YouTube Video Player (5PM–10PM Mode)</h1>
   <div class="controls">
     <input type="text" id="videoUrl" placeholder="Enter YouTube link...">
-    <button onclick="loadVideo()">Load</button>
-    <button onclick="saveVideo()">Save</button>
-    <button onclick="toggleFullscreen()">Fullscreen</button>
-    <button onclick="setSpeed(2)">2x Speed</button>
+    <button onclick="timeGuard(loadVideo)">Load</button>
+    <button onclick="timeGuard(saveVideo)">Save</button>
+    <button onclick="timeGuard(toggleFullscreen)">Fullscreen</button>
+    <button onclick="timeGuard(()=>setSpeed(2))">2x Speed</button>
   </div>
 
   <div id="player-container">
@@ -105,8 +110,9 @@
 
   <h2>📺 Watch Later</h2>
   <div id="watchLaterList"></div>
+  <p id="lockMessage"></p>
 
-  <!-- Load YouTube IFrame Player API -->
+  <!-- YouTube API -->
   <script src="https://www.youtube.com/iframe_api"></script>
   <script>
     let player;
@@ -118,6 +124,23 @@
         videoId: '',
         playerVars: { rel: 0, modestbranding: 1 },
       });
+    }
+
+    // ⏰ Allow between 17:00 (5PM) and 22:59 (10:59PM)
+    function isAllowedTime() {
+      const now = new Date();
+      const hour = now.getHours();
+      return hour >= 17 && hour <= 21;
+    }
+
+    function timeGuard(action) {
+      if (isAllowedTime()) {
+        action();
+        document.getElementById("lockMessage").textContent = "";
+      } else {
+        document.getElementById("lockMessage").textContent =
+          "⏳ Access only allowed between 5:00 PM - 10:00PM!";
+      }
     }
 
     function extractVideoId(url) {
@@ -163,6 +186,34 @@
 
     function renderWatchLater() {
       let saved = JSON.parse(localStorage.getItem("watchLater")) || [];
+      const container = document.getElementById("watchLaterList");
+      container.innerHTML = "";
+      saved.forEach(video => {
+        const card = document.createElement("div");
+        card.className = "video-card";
+        card.innerHTML = `
+          <img src="https://img.youtube.com/vi/${video.id}/hqdefault.jpg">
+          <div class="info">
+            <p>${video.title}</p>
+            <button onclick="timeGuard(()=>loadVideo('${video.id}'))">Play</button>
+            <button onclick="deleteVideo('${video.id}')">Delete</button>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    function deleteVideo(videoId) {
+      let saved = JSON.parse(localStorage.getItem("watchLater")) || [];
+      saved = saved.filter(v => v.id !== videoId);
+      localStorage.setItem("watchLater", JSON.stringify(saved));
+      renderWatchLater();
+    }
+
+    renderWatchLater();
+  </script>
+</body>
+  </html>      let saved = JSON.parse(localStorage.getItem("watchLater")) || [];
       const container = document.getElementById("watchLaterList");
       container.innerHTML = "";
       saved.forEach(video => {
