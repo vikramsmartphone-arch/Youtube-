@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+ <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -212,35 +212,5 @@
 
     renderWatchLater();
   </script>
-</body>
-  </html>      let saved = JSON.parse(localStorage.getItem("watchLater")) || [];
-      const container = document.getElementById("watchLaterList");
-      container.innerHTML = "";
-      saved.forEach(video => {
-        const card = document.createElement("div");
-        card.className = "video-card";
-        card.innerHTML = `
-          <img src="https://img.youtube.com/vi/${video.id}/hqdefault.jpg">
-          <div class="info">
-            <p>${video.title}</p>
-            <button onclick="loadVideo('${video.id}')">Play</button>
-            <button onclick="deleteVideo('${video.id}')">Delete</button>
-          </div>
-        `;
-        container.appendChild(card);
-      });
-    }
-
-    function deleteVideo(videoId) {
-      let saved = JSON.parse(localStorage.getItem("watchLater")) || [];
-      saved = saved.filter(v => v.id !== videoId);
-      localStorage.setItem("watchLater", JSON.stringify(saved));
-      renderWatchLater();
-    }
-
-    renderWatchLater();
-  </script>
-  
-
 </body>
 </html>
